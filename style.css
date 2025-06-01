@@ -36,46 +36,73 @@ canvas {
 }
 
 .card {
-  background-color: rgba(0, 0, 0, 0.8);
-  padding: 2rem;
-  border-radius: 8px;
-  max-width: 600px;
-  width: 80%;
+  background-color: rgba(10, 10, 20, 0.85); /* Slightly darker, more opaque card */
+  padding: 2.5rem; /* Increased padding */
+  border-radius: 12px; /* More rounded corners */
+  max-width: 650px; /* Slightly wider card */
+  width: 85%;
   text-align: left;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(12px); /* Stronger blur */
+  border: 1px solid rgba(255, 255, 255, 0.15); /* More visible border */
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3); /* Added shadow for depth */
 }
 
 .card h1 {
-  font-size: 3rem;
-  margin-bottom: 1rem;
+  font-size: 3.2rem; /* Slightly larger title */
+  margin-bottom: 1.2rem;
   font-weight: 700;
+  color: #e0e0e0; /* Lighter title color */
 }
 
 .card p {
-  font-size: 1.5rem;
-  line-height: 1.6;
+  font-size: 1.6rem; /* Slightly larger paragraph text */
+  line-height: 1.7;
+  margin-bottom: 1.2rem;
+  color: #c0c0c0; /* Lighter paragraph color */
+}
+
+.social-links {
+  margin-top: 1.5rem;
   margin-bottom: 1rem;
+  display: flex;
+  gap: 1.5rem; /* Increased gap */
+}
+
+.social-links a {
+  color: #61dafb; /* Brighter link color */
+  text-decoration: none;
+  font-size: 1.1rem; /* Larger link font size */
+  font-weight: 500;
+  padding: 0.5rem 1rem; /* Added padding for better click area */
+  border: 1px solid #61dafb;
+  border-radius: 6px;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.social-links a:hover {
+  background-color: #61dafb;
+  color: #000;
 }
 
 .instructions {
   font-size: 1rem !important;
-  color: #888;
+  color: #aaa; /* Slightly lighter instruction color */
   font-style: italic;
-  margin-top: 1rem !important;
+  margin-top: 1.5rem !important;
   margin-bottom: 0 !important;
 }
 
 .highlight-text {
   background-color: #fff;
   color: #000;
-  padding: 1rem 2rem;
-  font-size: 2rem;
+  padding: 1.2rem 2.2rem; /* Increased padding */
+  font-size: 2.2rem; /* Larger font size */
   font-weight: 700;
-  max-width: 800px;
+  max-width: 850px; /* Wider text box */
   width: 90%;
   text-align: center;
-  box-shadow: 0 10px 30px rgba(255, 255, 255, 0.1);
+  box-shadow: 0 12px 35px rgba(255, 255, 255, 0.15); /* Stronger shadow */
+  border-radius: 8px; /* Added border radius */
 }
 
 /* FPS counter */
@@ -83,11 +110,11 @@ canvas {
   position: fixed;
   top: 10px;
   right: 10px;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.6);
   color: #fff;
-  padding: 5px 10px;
+  padding: 6px 12px;
   border-radius: 4px;
-  font-size: 12px;
+  font-size: 13px;
   font-family: monospace;
   z-index: 100;
 }
@@ -97,19 +124,20 @@ canvas {
   position: fixed;
   top: 10px;
   left: 10px;
-  background-color: rgba(0, 0, 0, 0.7);
+  background-color: rgba(0, 0, 0, 0.75);
   color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  padding: 8px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  padding: 9px 14px;
   border-radius: 4px;
   font-size: 14px;
   cursor: pointer;
   z-index: 100;
-  transition: background-color 0.3s;
+  transition: background-color 0.3s, transform 0.2s;
 }
 
 .toggle-trails:hover {
-  background-color: rgba(0, 0, 0, 0.9);
+  background-color: rgba(0, 0, 0, 0.95);
+  transform: translateY(-1px);
 }
 
 /* Interactive object hover effects */
@@ -126,11 +154,21 @@ body.hovering {
 /* Responsive design */
 @media (max-width: 768px) {
   .card h1 {
-    font-size: 2rem;
+    font-size: 2.2rem;
   }
   
   .card p {
-    font-size: 1.2rem;
+    font-size: 1.3rem;
+  }
+
+  .social-links {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .social-links a {
+    font-size: 1rem;
+    padding: 0.4rem 0.8rem;
   }
   
   .instructions {
@@ -138,13 +176,13 @@ body.hovering {
   }
   
   .highlight-text {
-    font-size: 1.5rem;
-    padding: 0.8rem 1.5rem;
+    font-size: 1.6rem;
+    padding: 1rem 1.8rem;
   }
   
   .toggle-trails {
     font-size: 12px;
-    padding: 6px 10px;
+    padding: 7px 11px;
   }
 }
 
