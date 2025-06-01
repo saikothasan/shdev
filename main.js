@@ -45,10 +45,114 @@ const particlesMaterial = new THREE.PointsMaterial({
 const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
 scene.add(particlesMesh);
 
+// Particle Trail System
+class ParticleTrail {
+  constructor(parent, color, scene) {
+    this.parent = parent;
+    this.color = color;
+    this.scene = scene;
+    this.particles = [];
+    this.maxParticles = 50;
+    this.emissionRate = 3; // Particles per frame
+    this.frameCounter = 0;
+    this.particleLifespan = 60; // Frames
+    this.particleSize = 0.03;
+    this.lastPosition = new THREE.Vector3().copy(parent.position);
+  }
+
+  update() {
+    // Only emit particles if the object has moved
+    const distanceMoved = this.parent.position.distanceTo(this.lastPosition);
+    
+    if (distanceMoved > 0.001) {
+      this.frameCounter++;
+      
+      // Emit new particles based on emission rate
+      if (this.frameCounter % this.emissionRate === 0) {
+        this.emitParticle();
+      }
+      
+      // Update last position
+      this.lastPosition.copy(this.parent.position);
+    }
+    
+    // Update existing particles
+    for (let i = this.particles.length - 1; i >= 0; i--) {
+      const particle = this.particles[i];
+      particle.age++;
+      
+      // Remove old particles
+      if (particle.age >= this.particleLifespan) {
+        this.scene.remove(particle.mesh);
+        particle.geometry.dispose();
+        particle.material.dispose();
+        this.particles.splice(i, 1);
+        continue;
+      }
+      
+      // Update particle properties based on age
+      const lifeRatio = particle.age / this.particleLifespan;
+      particle.mesh.material.opacity = 1 - lifeRatio;
+      particle.mesh.scale.multiplyScalar(0.98); // Shrink over time
+    }
+  }
+  
+  emitParticle() {
+    // Create particle geometry
+    const geometry = new THREE.SphereGeometry(this.particleSize, 4, 4);
+    
+    // Create particle material with parent's color
+    const material = new THREE.MeshBasicMaterial({
+      color: this.color,
+      transparent: true,
+      opacity: 1,
+    });
+    
+    // Create mesh and position it at parent's position
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.position.copy(this.parent.position);
+    
+    // Add small random offset for more natural look
+    mesh.position.x += (Math.random() - 0.5) * 0.05;
+    mesh.position.y += (Math.random() - 0.5) * 0.05;
+    mesh.position.z += (Math.random() - 0.5) * 0.05;
+    
+    // Add to scene
+    this.scene.add(mesh);
+    
+    // Store particle data
+    this.particles.push({
+      mesh,
+      geometry,
+      material,
+      age: 0
+    });
+    
+    // Limit number of particles
+    if (this.particles.length > this.maxParticles) {
+      const oldestParticle = this.particles.shift();
+      this.scene.remove(oldestParticle.mesh);
+      oldestParticle.geometry.dispose();
+      oldestParticle.material.dispose();
+    }
+  }
+  
+  // Clean up all particles
+  dispose() {
+    for (const particle of this.particles) {
+      this.scene.remove(particle.mesh);
+      particle.geometry.dispose();
+      particle.material.dispose();
+    }
+    this.particles = [];
+  }
+}
+
 // Interactive 3D Objects
 const interactiveObjects = [];
 const originalColors = [];
 const originalScales = [];
+const particleTrails = [];
 
 // Create different geometric shapes
 const createInteractiveObjects = () => {
@@ -62,6 +166,7 @@ const createInteractiveObjects = () => {
   interactiveObjects.push(cube);
   originalColors.push(0x00ff88);
   originalScales.push(1);
+  particleTrails.push(new ParticleTrail(cube, 0x00ff88, scene));
 
   // Sphere
   const sphereGeometry = new THREE.SphereGeometry(0.3, 32, 32);
@@ -73,6 +178,7 @@ const createInteractiveObjects = () => {
   interactiveObjects.push(sphere);
   originalColors.push(0xff6b6b);
   originalScales.push(1);
+  particleTrails.push(new ParticleTrail(sphere, 0xff6b6b, scene));
 
   // Torus
   const torusGeometry = new THREE.TorusGeometry(0.3, 0.1, 16, 100);
@@ -84,6 +190,7 @@ const createInteractiveObjects = () => {
   interactiveObjects.push(torus);
   originalColors.push(0x4ecdc4);
   originalScales.push(1);
+  particleTrails.push(new ParticleTrail(torus, 0x4ecdc4, scene));
 
   // Octahedron
   const octaGeometry = new THREE.OctahedronGeometry(0.4);
@@ -95,6 +202,7 @@ const createInteractiveObjects = () => {
   interactiveObjects.push(octahedron);
   originalColors.push(0xffd93d);
   originalScales.push(1);
+  particleTrails.push(new ParticleTrail(octahedron, 0xffd93d, scene));
 
   // Cone
   const coneGeometry = new THREE.ConeGeometry(0.3, 0.8, 8);
@@ -106,6 +214,7 @@ const createInteractiveObjects = () => {
   interactiveObjects.push(cone);
   originalColors.push(0xa8e6cf);
   originalScales.push(1);
+  particleTrails.push(new ParticleTrail(cone, 0xa8e6cf, scene));
 };
 
 createInteractiveObjects();
@@ -164,6 +273,10 @@ const onMouseClick = (event) => {
           duration: 1, 
           ease: 'bounce.out' 
         });
+        // Increase particle emission during animation
+        const cubeTrail = particleTrails[interactiveObjects.indexOf(object)];
+        cubeTrail.emissionRate = 1; // Emit more particles
+        setTimeout(() => { cubeTrail.emissionRate = 3; }, 1000); // Reset after animation
         break;
       case 'sphere':
         gsap.to(object.position, { 
@@ -209,12 +322,16 @@ const onMouseClick = (event) => {
       duration: 0.5 
     });
 
-    // Update original color
+    // Update original color and particle trail color
     const index = interactiveObjects.indexOf(object);
     originalColors[index] = newColor;
+    particleTrails[index].color = newColor;
 
     // Create click effect
     createClickEffect(intersects[0].point);
+    
+    // Create burst of particles
+    createParticleBurst(intersects[0].point, newColor);
   }
 };
 
@@ -242,6 +359,73 @@ const createClickEffect = (position) => {
   });
 };
 
+// Create burst of particles on click
+const createParticleBurst = (position, color) => {
+  const particleCount = 20;
+  const burstParticles = [];
+  
+  for (let i = 0; i < particleCount; i++) {
+    const size = Math.random() * 0.05 + 0.02;
+    const geometry = new THREE.SphereGeometry(size, 4, 4);
+    const material = new THREE.MeshBasicMaterial({
+      color: color,
+      transparent: true,
+      opacity: 1
+    });
+    
+    const particle = new THREE.Mesh(geometry, material);
+    particle.position.copy(position);
+    
+    // Random velocity
+    particle.velocity = new THREE.Vector3(
+      (Math.random() - 0.5) * 0.1,
+      (Math.random() - 0.5) * 0.1,
+      (Math.random() - 0.5) * 0.1
+    );
+    
+    scene.add(particle);
+    burstParticles.push({
+      mesh: particle,
+      geometry: geometry,
+      material: material,
+      lifespan: 60,
+      age: 0
+    });
+  }
+  
+  // Animation loop for burst particles
+  const animateBurst = () => {
+    if (burstParticles.length === 0) return;
+    
+    requestAnimationFrame(animateBurst);
+    
+    for (let i = burstParticles.length - 1; i >= 0; i--) {
+      const particle = burstParticles[i];
+      particle.age++;
+      
+      if (particle.age >= particle.lifespan) {
+        scene.remove(particle.mesh);
+        particle.geometry.dispose();
+        particle.material.dispose();
+        burstParticles.splice(i, 1);
+        continue;
+      }
+      
+      // Update position based on velocity
+      particle.mesh.position.add(particle.velocity);
+      
+      // Slow down over time
+      particle.velocity.multiplyScalar(0.95);
+      
+      // Fade out
+      const lifeRatio = particle.age / particle.lifespan;
+      particle.material.opacity = 1 - lifeRatio;
+    }
+  };
+  
+  animateBurst();
+};
+
 // Add event listeners
 window.addEventListener('mousemove', onMouseMove);
 window.addEventListener('click', onMouseClick);
@@ -249,7 +433,7 @@ window.addEventListener('click', onMouseClick);
 // Camera positioning
 camera.position.z = 5;
 
-// DOM elements for scrolling content (existing code)
+// DOM elements for scrolling content
 const createTextSection = (title, content, position) => {
   const section = document.createElement('div');
   section.className = 'section';
@@ -269,7 +453,7 @@ const createTextSection = (title, content, position) => {
     // Add instructions for interactive objects
     const instructionsEl = document.createElement('p');
     instructionsEl.className = 'instructions';
-    instructionsEl.textContent = 'Click and hover on the floating objects around you!';
+    instructionsEl.textContent = 'Click and hover on the floating objects to see particle trails!';
     card.appendChild(instructionsEl);
   } else {
     const contentEl = document.createElement('div');
@@ -347,9 +531,37 @@ window.addEventListener('mousemove', (event) => {
   mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
 });
 
+// Performance monitoring
+let frameCount = 0;
+let lastTime = performance.now();
+const fpsElement = document.createElement('div');
+fpsElement.className = 'fps-counter';
+document.body.appendChild(fpsElement);
+
+// Toggle for particle trails
+let trailsEnabled = true;
+const toggleTrailsButton = document.createElement('button');
+toggleTrailsButton.className = 'toggle-trails';
+toggleTrailsButton.textContent = 'Disable Trails';
+toggleTrailsButton.addEventListener('click', () => {
+  trailsEnabled = !trailsEnabled;
+  toggleTrailsButton.textContent = trailsEnabled ? 'Disable Trails' : 'Enable Trails';
+});
+document.body.appendChild(toggleTrailsButton);
+
 // Animation loop
 const animate = () => {
   requestAnimationFrame(animate);
+  
+  // FPS counter
+  frameCount++;
+  const currentTime = performance.now();
+  if (currentTime - lastTime > 1000) {
+    const fps = Math.round((frameCount * 1000) / (currentTime - lastTime));
+    fpsElement.textContent = `${fps} FPS`;
+    frameCount = 0;
+    lastTime = currentTime;
+  }
   
   // Rotate particles slowly
   particlesMesh.rotation.x += 0.0005;
@@ -362,6 +574,11 @@ const animate = () => {
     
     // Floating animation
     object.position.y += Math.sin(Date.now() * 0.001 + index) * 0.001;
+    
+    // Update particle trails
+    if (trailsEnabled) {
+      particleTrails[index].update();
+    }
   });
   
   // Subtle camera movement based on mouse position
@@ -378,5 +595,14 @@ window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 });
+
+// Clean up function for when the component unmounts
+const cleanup = () => {
+  window.removeEventListener('mousemove', onMouseMove);
+  window.removeEventListener('click', onMouseClick);
+  
+  // Dispose of all particle trails
+  particleTrails.forEach(trail => trail.dispose());
+};
 
 animate();
